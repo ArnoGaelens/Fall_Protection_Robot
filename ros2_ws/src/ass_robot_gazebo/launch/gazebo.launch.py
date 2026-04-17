@@ -41,4 +41,12 @@ def generate_launch_description():
             executable='cmd_vel_bridge',
             output='screen'
         ),
+
+        # Bridge /scan from Gazebo to ROS2
+        Node(
+            package='ros_gz_bridge',
+            executable='parameter_bridge',
+            arguments=['/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan'],
+            output='screen'
+        ),
     ])

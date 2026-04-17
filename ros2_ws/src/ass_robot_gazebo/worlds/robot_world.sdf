@@ -8,6 +8,9 @@
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
       <pose>0 0 10 0 0 0</pose>
@@ -194,15 +197,15 @@
     <link name='Upper_Swivel'>
       <pose relative_to='Upper_swivel'>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>-0.0134627540582945 0.0059651539122167196 0.077213032298016293 0 0 0</pose>
-        <mass>27.685356838962502</mass>
+        <pose>-0.01341430136381833 0.0059436852157850363 0.078014846609753233 0 0 0</pose>
+        <mass>27.7853568389625</mass>
         <inertia>
-          <ixx>0.49793889992968399</ixx>
-          <ixy>-0.032242851123700199</ixy>
-          <ixz>-0.0051374212967278399</ixz>
-          <iyy>0.43945553287377898</iyy>
-          <iyz>0.0022765402662338801</iyz>
-          <izz>0.82057107694315601</izz>
+          <ixx>0.50289798534926311</ixx>
+          <ixy>-0.032234849286474188</ixy>
+          <ixz>-0.0054362744491963967</ixz>
+          <iyy>0.44442913213765878</iyy>
+          <iyz>0.0024089578268538629</iyz>
+          <izz>0.82060268178688023</izz>
         </inertia>
       </inertial>
       <collision name='Upper_Swivel_collision'>
@@ -213,6 +216,23 @@
             <uri>model://ass_robot_description/meshes/Upper_Swivel.STL</uri>
           </mesh>
         </geometry>
+      </collision>
+      <collision name='Upper_Swivel_fixed_joint_lump__lidar_link_collision_1'>
+        <pose>0 0 0.29999999999999999 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.040000000000000001</length>
+            <radius>0.050000000000000003</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
       </collision>
       <visual name='Upper_Swivel_visual'>
         <pose>0 0 0 0 0 0</pose>
@@ -227,6 +247,41 @@
           <ambient>0.990196109 1 1 1</ambient>
         </material>
       </visual>
+      <visual name='Upper_Swivel_fixed_joint_lump__lidar_link_visual_1'>
+        <pose>0 0 0.29999999999999999 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.040000000000000001</length>
+            <radius>0.050000000000000003</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+      <sensor name='lidar_sensor' type='lidar'>
+        <always_on>true</always_on>
+        <update_rate>10</update_rate>
+        <topic>/scan</topic>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>360</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.1415899999999999</min_angle>
+              <max_angle>3.1415899999999999</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.12</min>
+            <max>10</max>
+            <resolution>0.01</resolution>
+          </range>
+        </ray>
+        <pose>0 0 0.29999999999999999 0 0 0</pose>
+        <gz_frame_id>lidar_link</gz_frame_id>
+      </sensor>
     </link>
     <joint name='left_wheel_joint' type='revolute'>
       <pose relative_to='base_link'>-0.073543999999999998 0.24904999999999999 -0.10000000000000001 -1.5708 0 0</pose>
@@ -372,6 +427,12 @@
       <max_linear_velocity>0.5</max_linear_velocity>
       <max_angular_velocity>0.5</max_angular_velocity>
     </plugin>
+    <frame name='lidar_joint' attached_to='Upper_Swivel'>
+      <pose>0 0 0.29999999999999999 0 0 0</pose>
+    </frame>
+    <frame name='lidar_link' attached_to='lidar_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
   </model>
   </world>
 </sdf>

@@ -10,6 +10,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cmd_vel_bridge = ass_robot_bringup.cmd_vel_bridge:main',
+            'path_follower = ass_robot_bringup.path_follower:main',
         ],
     },
 )

@@ -1292,11 +1292,6 @@
       <allow_auto_disable>1</allow_auto_disable>
       <pose>-2.1175 -0.31181 0 0 -0 0</pose>
     </model>
-    <model name='living_room'>
-      <static>0</static>
-      <allow_auto_disable>1</allow_auto_disable>
-      <pose>-1.83596 1.40391 0 0 -0 0</pose>
-    </model>
     <model name='room_wall_2x5'>
       <link name='link'>
         <visual name='visual'>
@@ -1615,11 +1610,9 @@
             </box>
           </geometry>
           <material>
-            <script>
-              <uri>https://fuel.ignitionrobotics.org/1.0/makerspet/models/tv_65in_emissive/4/files/material/script</uri>
-              <uri>https://fuel.ignitionrobotics.org/1.0/makerspet/models/tv_65in_emissive/4/files/material/textures</uri>
-              <name>Custom/tv_emissive</name>
-            </script>
+            <ambient>0.05 0.05 0.05 1</ambient>
+            <diffuse>0.05 0.05 0.05 1</diffuse>
+            <emissive>0.2 0.3 0.8 1</emissive>
           </material>
         </visual>
         <self_collide>0</self_collide>
