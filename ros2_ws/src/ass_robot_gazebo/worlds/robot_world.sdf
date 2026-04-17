@@ -1,0 +1,377 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+  <world name="empty">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+    <model name='ASS_Robot'>
+      <pose>0 0 0.25 0 0 0</pose>
+    <link name='base_link'>
+      <inertial>
+        <pose>0.0150421058918037 7.8741546080257596e-06 -0.069480270289451196 0 0 0</pose>
+        <mass>28.821832945316402</mass>
+        <inertia>
+          <ixx>0.48758198796277202</ixx>
+          <ixy>2.6462409224555001e-05</ixy>
+          <ixz>0.0027309885731214502</ixz>
+          <iyy>0.55026844309904699</iyy>
+          <iyz>1.0548060635773299e-06</iyz>
+          <izz>0.92404108990981304</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.990196109 1 1 1</diffuse>
+          <ambient>0.990196109 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Castor_joint' type='revolute'>
+      <pose relative_to='base_link'>0.18479000000000001 0 -0.075200000000000003 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>Castor</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Castor'>
+      <pose relative_to='Castor_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-0.018216784333906999 6.1248140537095697e-07 -0.049639472679762597 0 0 0</pose>
+        <mass>0.050298222079498703</mass>
+        <inertia>
+          <ixx>2.10211254580428e-05</ixx>
+          <ixy>-7.4788853076430998e-10</ixy>
+          <ixz>-3.6938306416208199e-06</ixz>
+          <iyy>2.7237197795867901e-05</iyy>
+          <iyz>-1.5442872376809801e-09</iyz>
+          <izz>2.2737461364926399e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='Castor_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Castor.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Castor_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Castor.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.990196109 1 1 1</diffuse>
+          <ambient>0.990196109 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Castor_WheelLink' type='revolute'>
+      <pose relative_to='Castor'>-0.02 0 -0.069800000000000001 -1.5708 0 0</pose>
+      <parent>Castor</parent>
+      <child>Castor_Wheel</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>0.10000000000000001</damping>
+          <friction>0.10000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Castor_Wheel'>
+      <pose relative_to='Castor_WheelLink'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0467334599376183</mass>
+        <inertia>
+          <ixx>1.04416967249263e-05</ixx>
+          <ixy>3.17637355220363e-22</ixy>
+          <ixz>1.0587911840678799e-21</ixz>
+          <iyy>1.04416967249263e-05</iyy>
+          <iyz>1.2705494208814499e-21</iyz>
+          <izz>1.49696419566983e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='Castor_Wheel_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Castor_Wheel.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Castor_Wheel_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Castor_Wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.941176474 0.941176474 0.941176474 1</diffuse>
+          <ambient>0.941176474 0.941176474 0.941176474 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Upper_swivel' type='revolute'>
+      <pose relative_to='base_link'>0.023232093388506701 0 0.010000000000000101 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>Upper_Swivel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>5</damping>
+          <friction>2</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Upper_Swivel'>
+      <pose relative_to='Upper_swivel'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-0.0134627540582945 0.0059651539122167196 0.077213032298016293 0 0 0</pose>
+        <mass>27.685356838962502</mass>
+        <inertia>
+          <ixx>0.49793889992968399</ixx>
+          <ixy>-0.032242851123700199</ixy>
+          <ixz>-0.0051374212967278399</ixz>
+          <iyy>0.43945553287377898</iyy>
+          <iyz>0.0022765402662338801</iyz>
+          <izz>0.82057107694315601</izz>
+        </inertia>
+      </inertial>
+      <collision name='Upper_Swivel_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Upper_Swivel.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Upper_Swivel_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Upper_Swivel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.990196109 1 1 1</diffuse>
+          <ambient>0.990196109 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='left_wheel_joint' type='revolute'>
+      <pose relative_to='base_link'>-0.073543999999999998 0.24904999999999999 -0.10000000000000001 -1.5708 0 0</pose>
+      <parent>base_link</parent>
+      <child>Left_wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>0.10000000000000001</damping>
+          <friction>0.10000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Left_wheel'>
+      <pose relative_to='left_wheel_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 -0.038699999999999998 0 0 0</pose>
+        <mass>1.17320543741845</mass>
+        <inertia>
+          <ixx>0.0019880027793277599</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0019880027793277599</iyy>
+          <iyz>0</iyz>
+          <izz>0.0028350123276533702</izz>
+        </inertia>
+      </inertial>
+      <collision name='Left_wheel_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.050000000000000003</length>
+            <radius>0.069500000000000006</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1</mu>
+              <mu2>1</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode/>
+          </contact>
+        </surface>
+      </collision>
+      <visual name='Left_wheel_visual'>
+        <pose>0 0 0 0 -0.22305 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Left_wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.941176474 0.941176474 0.941176474 1</diffuse>
+          <ambient>0.941176474 0.941176474 0.941176474 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='right_wheel_joint' type='revolute'>
+      <pose relative_to='base_link'>-0.073543999999999998 -0.24904999999999999 -0.10000000000000001 -1.5708 0 0</pose>
+      <parent>base_link</parent>
+      <child>Right_wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>0.10000000000000001</damping>
+          <friction>0.10000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Right_wheel'>
+      <pose relative_to='right_wheel_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>5.5511151231257802e-17 0 0.038699999999999998 0 0 0</pose>
+        <mass>1.17320543741845</mass>
+        <inertia>
+          <ixx>0.0019880027793277599</ixx>
+          <ixy>4.0657581468206402e-19</ixy>
+          <ixz>2.9815559743351401e-19</ixz>
+          <iyy>0.0019880027793277599</iyy>
+          <iyz>-2.7105054312137601e-19</iyz>
+          <izz>0.0028350123276533702</izz>
+        </inertia>
+      </inertial>
+      <collision name='Right_wheel_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.050000000000000003</length>
+            <radius>0.069500000000000006</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1</mu>
+              <mu2>1</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode/>
+          </contact>
+        </surface>
+      </collision>
+      <visual name='Right_wheel_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://ass_robot_description/meshes/Right_wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.941176474 0.941176474 0.941176474 1</diffuse>
+          <ambient>0.941176474 0.941176474 0.941176474 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <plugin name='gz::sim::systems::DiffDrive' filename='gz-sim-diff-drive-system'>
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>0.498</wheel_separation>
+      <wheel_radius>0.0695</wheel_radius>
+      <topic>cmd_vel</topic>
+      <odom_topic>odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+      <max_linear_velocity>0.5</max_linear_velocity>
+      <max_angular_velocity>0.5</max_angular_velocity>
+    </plugin>
+  </model>
+  </world>
+</sdf>

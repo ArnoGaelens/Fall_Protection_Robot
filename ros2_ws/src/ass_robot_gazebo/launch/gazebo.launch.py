@@ -4,29 +4,41 @@ from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 from launch_ros.actions import Node
 
+os.environ['GZ_IP'] = '127.0.0.1'
+
 
 def generate_launch_description():
+    desc_share = get_package_share_directory('ass_robot_description')
+    os.environ['GZ_SIM_RESOURCE_PATH'] = os.path.dirname(desc_share)
+
+    urdf = os.path.join(desc_share, 'urdf', 'ASS_Robot.urdf')
+    with open(urdf, 'r') as f:
+        robot_description = f.read()
+
     world = os.path.join(
         get_package_share_directory('ass_robot_gazebo'),
-        'worlds', 'living_room.sdf'
+        'worlds', 'robot_world.sdf'
     )
 
     return LaunchDescription([
-        # Start Gazebo Harmonic with the world
-        ExecuteProcess(
-            cmd=['gz', 'sim', world],
+        # Publish robot URDF to /robot_description
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            parameters=[{'robot_description': robot_description}],
             output='screen'
         ),
 
-        # Spawn the robot (requires ass_robot_description to publish robot_description)
+        # Start Gazebo with the world that already contains the robot
+        ExecuteProcess(
+            cmd=['gz', 'sim', '-r', world],
+            output='screen'
+        ),
+
+        # Bridge /cmd_vel from ROS2 to Gazebo
         Node(
-            package='ros_gz_sim',
-            executable='create',
-            arguments=[
-                '-name', 'ASS_Robot',
-                '-topic', 'robot_description',
-                '-x', '0', '-y', '0', '-z', '0.1'
-            ],
+            package='ass_robot_bringup',
+            executable='cmd_vel_bridge',
             output='screen'
         ),
     ])
