@@ -1,0 +1,10 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    upper_swivel_velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+upper_swivel_velocity_controller:
+  ros__parameters:
+    joints:
+      - Upper_swivel

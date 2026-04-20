@@ -2,6 +2,16 @@
 ros2_ws/build/
 ros2_ws/install/
 ros2_ws/log/
+ros2_ws2/build/
+ros2_ws2/install/
+ros2_ws2/log/
+ros2_ws3/build/
+ros2_ws3/install/
+ros2_ws3/log/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
 
 # Claude memory
 .claude/

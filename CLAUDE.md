@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Context
 
-KU Leuven Technology Valorization project (Semester 6, 2025–2026). The goal is a ROS2 Humble + Gazebo Harmonic simulation of the **ASS_Robot** — a differential-drive robot with a rotating upper swivel section, modelling a wearable fall-protection system for robotics. See `0_ProjectInformation/` for all non-code assets (URDF source, pitch decks, BOM, sensor specs).
+KU Leuven Technology Valorization project (Semester 6, 2025–2026). The goal is a ROS2 + Gazebo simulation of the **ASS_Robot** — a differential-drive robot with a rotating upper swivel section, modelling a wearable fall-protection system for robotics. See `0_ProjectInformation/` for all non-code assets (URDF source, pitch decks, BOM, sensor specs).
 
 ## Robot Architecture
 
@@ -16,55 +16,40 @@ The robot (`ASS_Robot`) was exported from SolidWorks via the sw_urdf_exporter. K
 | `Left_wheel` / `Right_wheel` | 1.17 kg each | Differential drive, continuous joints |
 | `Castor` + `Castor_Wheel` | ~0.1 kg | Front passive castor, two continuous joints |
 | `Upper_Swivel` | 27.7 kg | Rotating upper body, continuous joint on Z axis |
-| `lidar_link` | 0.1 kg | Fixed to Upper_Swivel at z+0.3m, hosts LiDAR sensor |
+| `lidar_link` | 0.1 kg | Fixed to Upper_Swivel at z+0.17m, hosts LiDAR sensor |
 
 The URDF source lives at `0_ProjectInformation/URDF_FILES/urdf/ASS_Robot.urdf`. STL meshes are in `0_ProjectInformation/URDF_FILES/meshes/`.
-The working URDF is at `ros2_ws/src/ass_robot_description/urdf/ASS_Robot.urdf` — this is the one that matters for simulation.
-
-**Important:** The existing `package.xml` and `CMakeLists.txt` in the repo root are ROS1 (catkin). Everything in the simulation workspace uses ROS2 (ament_cmake / ament_python).
 
 ## Environment
 
-- **ROS2 Humble** (not Jazzy — Jazzy requires Ubuntu 24.04, machine runs 22.04)
-- **Gazebo Harmonic** (gz-sim8, version 8.11.0)
-- Shell: bash (zsh removed)
+- **ROS2 Jazzy** (machine runs Ubuntu 24.04)
+- **Gazebo Harmonic** (gz-sim8, ros_gz_sim)
+- Shell: bash (sourced automatically via `~/.bashrc`)
 - Build system: colcon
-- Workspace root: `ros2_ws/`
 
-## Common Commands
+## Workspaces
 
-```bash
-# Source ROS2 + workspace (always needed in a new terminal)
-source /opt/ros/humble/setup.bash
-source /home/arno/Documents/Technology_Valorization/Fall_Protection_Robot/ros2_ws/install/setup.bash
+### ros2_ws3 (active workspace)
+Workspace root: `ros2_ws3/`
 
-# Build workspace
-cd ros2_ws && colcon build --symlink-install
-
-# Launch full simulation (Gazebo + robot_state_publisher + bridges)
-ros2 launch ass_robot_gazebo gazebo.launch.py
-
-# Teleop
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
-
-# Run automated path
-ros2 run ass_robot_bringup path_follower
-
-# Check what topics exist
-ros2 topic list
-
-# Check LiDAR data
-ros2 topic echo /scan
-
-# Send velocity commands manually
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}, angular: {z: 0.3}}"
-
-# Inspect joint states
-ros2 topic echo /joint_states
+```
+ros2_ws3/src/mobile_robot/
+  model/ass_robot_description/
+    urdf/ASS_Robot.urdf.xacro     # main robot description (xacro)
+    urdf/robot.gazebo              # all Gazebo plugins, sensors, friction, colors
+    meshes/                        # STL mesh files
+    launch/display.launch.py       # RViz preview launch
+  launch/
+    gazebo_model.launch.py         # main simulation launch file
+  parameters/
+    bridge_parameters.yaml         # ros_gz_bridge topic config
+    controllers.yaml               # ros2_control controller definitions
+  worlds/
+    Test_Figuren.sdf               # test world with obstacles
+  CMakeLists.txt                   # installs model, launch, parameters, worlds
 ```
 
-## Package Structure
-
+### ros2_ws (old workspace — for reference only)
 ```
 ros2_ws/src/
   ass_robot_description/   # URDF + STL meshes
@@ -72,41 +57,110 @@ ros2_ws/src/
   ass_robot_bringup/       # cmd_vel_bridge, path_follower
 ```
 
-## World SDF Regeneration
-
-The world SDF embeds the full robot model (for persistence across simulation resets).
-After any URDF change, regenerate it:
+## Common Commands
 
 ```bash
-cd ros2_ws
-colcon build --symlink-install && source install/setup.bash
-gz sdf -p install/ass_robot_description/share/ass_robot_description/urdf/ASS_Robot.urdf 2>/dev/null > /tmp/ASS_Robot.sdf
-python3 /tmp/regen_world.py
-```
+# Source ROS2 + workspace (added to ~/.bashrc, runs automatically)
+source /opt/ros/jazzy/setup.bash
+source /home/arno/Documents/Technology_Valorization/Fall_Protection_Robot/ros2_ws3/install/setup.bash
 
-`/tmp/regen_world.py` contains the world template (physics, plugins, ground plane) and injects the converted robot model. **Keep this script updated** when adding world-level plugins.
+# Build workspace
+cd ~/Documents/Technology_Valorization/Fall_Protection_Robot/ros2_ws3
+colcon build --symlink-install
+
+# Launch simulation — default world (Test_Figuren.sdf)
+ros2 launch mobile_robot gazebo_model.launch.py
+
+# Launch with a different world
+ros2 launch mobile_robot gazebo_model.launch.py world:=/full/path/to/world.sdf
+
+# Launch with built-in empty world
+ros2 launch mobile_robot gazebo_model.launch.py world:=default.sdf
+
+# Teleop
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+# Control Upper_Swivel (rad/s, negative to reverse)
+ros2 topic pub /upper_swivel_velocity_controller/commands std_msgs/msg/Float64MultiArray "{data: [1.0]}"
+
+# Stop Upper_Swivel
+ros2 topic pub /upper_swivel_velocity_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.0]}"
+
+# Send velocity commands manually
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}, angular: {z: 0.3}}"
+
+# Check active topics
+ros2 topic list
+
+# Check LiDAR data
+ros2 topic echo /scan
+
+# Inspect joint states
+ros2 topic echo /joint_states
+
+# Verify xacro parses correctly
+cd ~/Documents/Technology_Valorization/Fall_Protection_Robot/ros2_ws3
+source install/setup.bash
+xacro src/mobile_robot/model/ass_robot_description/urdf/ASS_Robot.urdf.xacro
+```
 
 ## Key Implementation Details
 
-### cmd_vel bridge
-`ros_gz_bridge` has a message type incompatibility for Twist (`ignition.msgs` vs `gz.msgs`). A custom Python bridge in `ass_robot_bringup/cmd_vel_bridge.py` uses `gz.transport13` directly to forward `/cmd_vel` from ROS2 to Gazebo.
+### URDF / Xacro
+- Main file is `ASS_Robot.urdf.xacro` — includes `robot.gazebo` via `xacro:include`
+- All `<gazebo>` tags live in `robot.gazebo`, not in the main xacro
+- Meshes referenced as `package://ass_robot_description/meshes/`
+- Collision geometry uses primitives (box/cylinder/sphere), not STL — dartsim doesn't support mesh collisions
+- Robot spawns at `z=0.17` to sit correctly on the ground plane
+
+### Collision primitives (dartsim limitation)
+| Link | Collision shape |
+|------|----------------|
+| `base_link` | box 0.40×0.45×0.15, offset x=0.05 z=-0.07 |
+| `Left_wheel` / `Right_wheel` | cylinder r=0.0695 l=0.05 |
+| `Castor` | box 0.06×0.04×0.05, offset z=-0.025 |
+| `Castor_Wheel` | sphere r=0.025 |
+| `Upper_Swivel` | box 0.40×0.40×0.30, offset at CoM |
+
+### Gazebo plugins (in robot.gazebo)
+- `gz-sim-diff-drive-system` — differential drive, topics: `cmd_vel`, `odom`, `tf`
+- `gz-sim-joint-state-publisher-system` — publishes `joint_states` gz topic
+- `gpu_lidar` sensor on `lidar_link` — topic: `scan`
+- `gz_ros2_control-system` — ros2_control interface for Upper_Swivel
+
+### ros_gz_bridge
+Uses YAML config (`bridge_parameters.yaml`). No custom Python bridge needed.
+Bridged topics:
+- GZ → ROS2: `clock`, `joint_states`, `odom`, `tf`, `scan`
+- ROS2 → GZ: `cmd_vel`
+
+### ros2_control (Upper_Swivel)
+- Hardware plugin: `gz_ros2_control/GazeboSimSystem`
+- Controller: `velocity_controllers/JointGroupVelocityController`
+- Command topic: `/upper_swivel_velocity_controller/commands` (Float64MultiArray)
+- Config: `parameters/controllers.yaml`
+- Requires: `ros-jazzy-gz-ros2-control`, `ros-jazzy-ros2-controllers`
 
 ### Wheel joints
 - Both wheels use `rpy="-1.5708 0 0"` and `axis="0 0 1"` for symmetric differential drive
 - Left wheel visual has `rpy="0 -0.22305 0"` to compensate for the removed joint Z rotation
-- Wheel collisions are cylinders (not STL meshes) to ensure centered contact point
 - Left wheel CoM is at `z=-0.0387` (negative because local Z points opposite to right wheel)
 
-### Upper_Swivel
-- `damping=5.0, friction=2.0` on the joint to prevent free rotation
-- No actuator defined yet — passive in current simulation
-
 ### LiDAR
-- Sensor type: `lidar` (CPU-based, not `gpu_lidar`) for compatibility
-- Mounted on `lidar_link`, fixed to `Upper_Swivel` at `xyz="0 0 0.3"`
-- 360° scan, 10 Hz, 10m range
-- Bridged via `ros_gz_bridge`: `/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan`
-- Requires `gz-sim-sensors-system` plugin in the world SDF
+- Sensor type: `gpu_lidar`
+- Mounted on `lidar_link`, fixed to `Upper_Swivel` at `xyz="0 0 0.17"`
+- Rotates with Upper_Swivel (fixed joint)
+- 360° scan, 10 Hz, 10m range, topic: `scan`
 
 ### GZ_SIM_RESOURCE_PATH
-Set in `gazebo.launch.py` to the parent of the `ass_robot_description` share dir so that `model://ass_robot_description/meshes/` URIs resolve correctly.
+Set in `gazebo_model.launch.py` to `share/mobile_robot/model` so Gazebo resolves `model://ass_robot_description/meshes/` URIs correctly.
+
+### World files
+Saved in `worlds/` directory, installed via CMakeLists.txt.
+Pass at launch time: `world:=/path/to/world.sdf`
+To save a world from Gazebo GUI: press Enter instead of clicking OK (Qt5 dialog bug).
+
+### Known warnings (harmless)
+- `libEGL` / `dri2 screen` — NVIDIA GPU EGL fallback, cosmetic
+- QML binding loop — Qt5 GUI cosmetic
+- `gz_frame_id` not in SDF — Gazebo copies and uses it anyway
