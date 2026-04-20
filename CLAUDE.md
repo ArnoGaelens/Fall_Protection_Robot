@@ -164,3 +164,66 @@ To save a world from Gazebo GUI: press Enter instead of clicking OK (Qt5 dialog 
 - `libEGL` / `dri2 screen` — NVIDIA GPU EGL fallback, cosmetic
 - QML binding loop — Qt5 GUI cosmetic
 - `gz_frame_id` not in SDF — Gazebo copies and uses it anyway
+
+---
+
+## Person-Following Implementation Plan
+
+Goal: robot autonomously follows a person wearing a wearable, avoids obstacles, stays close.
+
+### Architecture
+```
+Gazebo sim → /scan + /odom + /tf
+                    ↓
+              Nav2 (mapless)       ← local costmap, obstacle avoidance, path planning
+                    ↓
+         Person Follower Node      ← subscribes /person_pose, sends Nav2 goals
+                    ↓
+            /cmd_vel → robot
+```
+
+### Step Plan
+
+| Step | Status | Description |
+|------|--------|-------------|
+| 1 | ✅ Done | Gazebo simulation running (LiDAR, odom, cmd_vel, bridges) |
+| 2 | ✅ Done | LiDAR visualization in Gazebo |
+| 3 | ✅ Done | Nav2 mapless mode running (nav2_params.yaml, nav2.launch.py) |
+| 4 | ✅ Done | Nav2 obstacle avoidance working, RViz costmap visible |
+| 5 | ✅ Done | RViz setup — scan, costmap, 2D Goal Pose tool |
+| 6 | 🔲 Todo | Simulated person node — publishes moving `/person_pose` |
+| 7 | 🔲 Todo | Person follower node — converts `/person_pose` to Nav2 goals |
+| 8 | 🔲 Todo | Tuning — speeds, costmap inflation, goal tolerance |
+
+### Nav2 mapless mode
+- No map server, no AMCL
+- Rolling global costmap (obstacle layer only, no static map)
+- Local costmap with obstacle + inflation layers
+- Controller: Regulated Pure Pursuit (RPP) — good for smooth person following
+- Planner: NavFn on rolling costmap
+- Requires: `ros-jazzy-navigation2`, `ros-jazzy-nav2-bringup`
+
+### Key files
+```
+ros2_ws3/src/mobile_robot/
+  parameters/nav2_params.yaml      # Nav2 configuration (mapless, RPP, NavFn)
+  launch/nav2.launch.py            # Nav2 launch (4 core nodes only)
+  scripts/person_sim.py            # simulated person publisher (todo)
+  scripts/person_follower.py       # person follower node (todo)
+```
+
+### Bridge fixes required (Gazebo Harmonic topic namespacing)
+- TF: gz topic is `/model/ASS_Robot/tf` (not `tf`)
+- Joint states: gz topic is `/world/empty/model/ASS_Robot/joint_state` (not `joint_states`)
+- These are set correctly in `bridge_parameters.yaml`
+
+### Nav2 launch notes
+- Use custom `nav2.launch.py` — NOT `nav2_bringup/navigation_launch.py`
+- nav2_bringup starts collision_monitor which crashes without full config
+- Custom launch starts only: controller_server, planner_server, behavior_server, bt_navigator
+
+### RViz2 setup
+- Fixed Frame: `odom`
+- Add: LaserScan → `/scan`
+- Add: Map → `/local_costmap/costmap`
+- Use **2D Goal Pose** toolbar button to send Nav2 goals by clicking on floor
