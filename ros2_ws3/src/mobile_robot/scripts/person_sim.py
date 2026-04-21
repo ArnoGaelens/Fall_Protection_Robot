@@ -151,18 +151,19 @@ class PersonSim(Node):
         self._gz_tick += 1
         if self._gz_tick >= 3:
             self._gz_tick = 0
-            # only spawn if previous call has finished
-            if self._gz_proc is None or self._gz_proc.poll() is not None:
-                req = f'name: "person" position: {{x: {px:.3f} y: {py:.3f} z: 0.9}}'
-                self._gz_proc = subprocess.Popen(
-                    ['gz', 'service', '-s', '/world/empty/set_pose',
-                     '--reqtype', 'gz.msgs.Pose',
-                     '--reptype', 'gz.msgs.Boolean',
-                     '--req', req,
-                     '--timeout', '200'],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
+            # kill stale call so Gazebo always gets the latest position
+            if self._gz_proc is not None and self._gz_proc.poll() is None:
+                self._gz_proc.terminate()
+            req = f'name: "person" position: {{x: {px:.3f} y: {py:.3f} z: 0.9}}'
+            self._gz_proc = subprocess.Popen(
+                ['gz', 'service', '-s', '/world/empty/set_pose',
+                 '--reqtype', 'gz.msgs.Pose',
+                 '--reptype', 'gz.msgs.Boolean',
+                 '--req', req,
+                 '--timeout', '300'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 
 
 def main(args=None):

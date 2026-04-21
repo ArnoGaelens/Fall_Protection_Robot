@@ -136,15 +136,26 @@ ros2 topic echo /scan
 ### Person Following (reactive controller)
 - Architecture: `person_sim.py` → `/person_pose` → `person_follower.py` → `/cmd_vel`
 - **No Nav2 path planning** — direct reactive velocity control
-- Stays 40cm from person, stops if obstacle within 30cm (excluding person direction)
-- Person sim moves a red cylinder in Gazebo via `gz service /world/empty/set_pose`
-- Person direction is excluded from obstacle check (LiDAR would otherwise see person as obstacle)
+- Target distance: 0.3m behind person
+- Max speed: 0.8 m/s (matches elderly walking pace)
+- Obstacle avoidance: stops and steers away if obstacle within 0.6m (excluding person direction)
+- Hard backup: reverses at -0.2 m/s if obstacle within 0.35m
+- Person ignore cone: 50° around person direction (only ignored if range > 70% of person distance)
+- Upper_Swivel tracks person at all times via P controller on joint angle
+- Person sim: click waypoints in RViz (Publish Point tool) to draw path, person walks it looping
+- Person sim: natural variation — random pauses (1.5–4s), speed fluctuation (50–120% nominal)
+- Person sim: Gazebo cylinder updated at ~3 Hz, old subprocess killed before new one spawns
 
 ### RViz2
 - Fixed Frame: `odom`
 - Config auto-loaded from `parameters/nav2_rviz.rviz`
 - Displays: RobotModel, LaserScan (`/scan`), LocalCostmap, GlobalCostmap, GlobalPath, PersonPose
+- Toolbar includes Publish Point tool for drawing person path
 - Robot appears slightly underground in RViz (cosmetic, z-offset in odom frame) — harmless
+
+### Physics Tweaks (cheats)
+- `Upper_Swivel` CoM z lowered from +0.077 to -0.35 — prevents robot tipping on acceleration
+- DiffDrive max speed set to 1.5 m/s in plugin (follower uses 0.8 m/s)
 
 ### Known Issues / Warnings
 - Robot visually underground in RViz — cosmetic only, navigation unaffected
@@ -161,6 +172,7 @@ ros2 topic echo /scan
 | 3 | ✅ | Nav2 mapless mode |
 | 4 | ✅ | Obstacle avoidance + RViz costmap |
 | 5 | ✅ | RViz with auto-loaded config |
-| 6 | ✅ | Person sim node (red cylinder walking in circle) |
+| 6 | ✅ | Person sim — click-to-draw path, natural movement |
 | 7 | ✅ | Reactive person follower (direct /cmd_vel, no path planning) |
-| 8 | 🔲 | Final tuning for demo |
+| 8 | ✅ | Upper_Swivel tracks person direction |
+| 9 | 🔲 | Final demo tuning |
