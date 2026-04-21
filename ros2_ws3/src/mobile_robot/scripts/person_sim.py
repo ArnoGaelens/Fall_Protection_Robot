@@ -44,6 +44,7 @@ class PersonSim(Node):
         self._accel         = 0.4          # m/s² — how fast speed changes
 
         self._gz_tick = 0
+        self._gz_proc  = None   # last gz service subprocess
 
         self.get_logger().info(
             'Person sim ready — click waypoints in RViz (Publish Point tool) to draw a path.'
@@ -150,16 +151,18 @@ class PersonSim(Node):
         self._gz_tick += 1
         if self._gz_tick >= 3:
             self._gz_tick = 0
-            req = f'name: "person" position: {{x: {px:.3f} y: {py:.3f} z: 0.9}}'
-            subprocess.Popen(
-                ['gz', 'service', '-s', '/world/empty/set_pose',
-                 '--reqtype', 'gz.msgs.Pose',
-                 '--reptype', 'gz.msgs.Boolean',
-                 '--req', req,
-                 '--timeout', '200'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+            # only spawn if previous call has finished
+            if self._gz_proc is None or self._gz_proc.poll() is not None:
+                req = f'name: "person" position: {{x: {px:.3f} y: {py:.3f} z: 0.9}}'
+                self._gz_proc = subprocess.Popen(
+                    ['gz', 'service', '-s', '/world/empty/set_pose',
+                     '--reqtype', 'gz.msgs.Pose',
+                     '--reptype', 'gz.msgs.Boolean',
+                     '--req', req,
+                     '--timeout', '200'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
 
 
 def main(args=None):
