@@ -22,6 +22,11 @@ def generate_launch_description():
 
     remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
 
+    rviz_config = os.path.join(
+        get_package_share_directory('mobile_robot'),
+        'parameters', 'nav2_rviz.rviz'
+    )
+
     return LaunchDescription([
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
         SetParameter(name='use_sim_time', value=True),
@@ -64,6 +69,13 @@ def generate_launch_description():
             respawn_delay=2.0,
             parameters=[configured_params],
             remappings=remappings,
+        ),
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', rviz_config],
+            output='screen',
         ),
         Node(
             package='nav2_lifecycle_manager',

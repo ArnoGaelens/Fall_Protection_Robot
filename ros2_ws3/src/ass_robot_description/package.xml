@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ass_robot_description</name>
+  <version>0.0.1</version>
+  <description>Mesh files for ASS_Robot</description>
+  <maintainer email="arno.gaelens@gmail.com">arno</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

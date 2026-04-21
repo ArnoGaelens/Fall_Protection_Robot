@@ -214,6 +214,22 @@
       <static>false</static>
       <self_collide>false</self_collide>
     </model>
+    <model name='person'>
+      <static>true</static>
+      <pose>2.5 0 0.9 0 0 0</pose>
+      <link name='link'>
+        <visual name='body'>
+          <geometry>
+            <cylinder><radius>0.2</radius><length>1.5</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>1 0.2 0.2 1</ambient>
+            <diffuse>1 0.2 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
     <light name='sun' type='directional'>
       <pose>0 0 10 0 0 0</pose>
       <cast_shadows>true</cast_shadows>

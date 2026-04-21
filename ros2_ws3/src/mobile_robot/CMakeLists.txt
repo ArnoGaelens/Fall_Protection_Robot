@@ -19,4 +19,10 @@ install(DIRECTORY model launch parameters worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+  scripts/person_sim.py
+  scripts/person_follower.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
