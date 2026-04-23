@@ -37,10 +37,10 @@ Visualization Manager:
         Value: /plan
       Value: true
       Color: 0; 255; 0
-    - Class: rviz_default_plugins/Pose
-      Name: PersonPose
+    - Class: rviz_default_plugins/Marker
+      Name: PersonMarker
       Topic:
-        Value: /person_pose
+        Value: /person_marker
       Value: true
   Global Options:
     Fixed Frame: odom

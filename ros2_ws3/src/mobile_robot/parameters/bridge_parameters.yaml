@@ -39,3 +39,10 @@
   ros_type_name: "sensor_msgs/msg/LaserScan"
   gz_type_name: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS
+
+# gz world pose info — ground truth positions of all models (published by SceneBroadcaster)
+- ros_topic_name: "/gz_world_poses"
+  gz_topic_name: "/world/empty/pose/info"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS

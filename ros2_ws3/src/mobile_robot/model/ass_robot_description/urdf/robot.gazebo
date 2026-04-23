@@ -13,7 +13,7 @@
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
       <max_linear_velocity>1.5</max_linear_velocity>
-      <max_angular_velocity>1.2</max_angular_velocity>
+      <max_angular_velocity>1.5</max_angular_velocity>
     </plugin>
   </gazebo>
 

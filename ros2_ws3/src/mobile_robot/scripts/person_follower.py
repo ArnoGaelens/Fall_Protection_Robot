@@ -23,12 +23,13 @@ class PersonFollower(Node):
     def __init__(self):
         super().__init__('person_follower')
 
-        self.declare_parameter('target_distance',   0.3)
+        self.declare_parameter('target_distance',   0.1)
         self.declare_parameter('max_linear_vel',    0.8)
-        self.declare_parameter('max_angular_vel',   0.8)
-        self.declare_parameter('obstacle_distance', 0.6)
-        self.declare_parameter('obstacle_stop',     0.35)
-        self.declare_parameter('obstacle_angle',    90.0)
+        self.declare_parameter('max_angular_vel',   1.5)
+        self.declare_parameter('obstacle_distance', 1.5)   # repulsion starts here
+        self.declare_parameter('obstacle_stop',     0.4)   # back up zone
+        self.declare_parameter('speed_slow_dist',   0.7)   # speed reduction starts here
+        self.declare_parameter('obstacle_angle',    100.0)
         self.declare_parameter('person_ignore_deg', 50.0)
 
         self.target_dist   = self.get_parameter('target_distance').value
@@ -36,6 +37,7 @@ class PersonFollower(Node):
         self.max_ang       = self.get_parameter('max_angular_vel').value
         self.obs_dist      = self.get_parameter('obstacle_distance').value
         self.obs_stop      = self.get_parameter('obstacle_stop').value
+        self.speed_slow    = self.get_parameter('speed_slow_dist').value
         self.obs_angle     = math.radians(self.get_parameter('obstacle_angle').value)
         self.person_ignore = math.radians(self.get_parameter('person_ignore_deg').value)
 
@@ -50,14 +52,19 @@ class PersonFollower(Node):
         self._robot_x   = 0.0
         self._robot_y   = 0.0
         self._robot_yaw = 0.0
-        self._person_x  = None
-        self._person_y  = None
+        self._person_x   = None
+        self._person_y   = None
+        self._person_yaw = 0.0
 
-        self._obstacle_ahead    = False
-        self._obstacle_critical = False
-        self._obstacle_steer    = 0.0
-        self._closest_obs       = float('inf')
-        self._swivel_angle      = 0.0
+        self.declare_parameter('rear_offset', 0.6)   # metres behind person
+        self.declare_parameter('left_offset', 0.35)  # metres to person's left
+        self.rear_offset = self.get_parameter('rear_offset').value
+        self.left_offset = self.get_parameter('left_offset').value
+
+        self._avoid_ang   = 0.0   # repulsive steering from potential field
+        self._closest_obs = float('inf')
+        self._critical    = False
+        self._swivel_angle = 0.0
 
         self.create_timer(0.1, self.control_loop)
         self.get_logger().info('Person follower started')
@@ -73,8 +80,9 @@ class PersonFollower(Node):
         self._robot_yaw = yaw_from_quaternion(msg.pose.pose.orientation)
 
     def person_cb(self, msg: PoseStamped):
-        self._person_x = msg.pose.position.x
-        self._person_y = msg.pose.position.y
+        self._person_x   = msg.pose.position.x
+        self._person_y   = msg.pose.position.y
+        self._person_yaw = yaw_from_quaternion(msg.pose.orientation)
 
     def scan_cb(self, msg: LaserScan):
         person_angle_robot = 0.0
@@ -88,11 +96,9 @@ class PersonFollower(Node):
                 math.sin(person_angle_world - self._robot_yaw),
                 math.cos(person_angle_world - self._robot_yaw))
 
-        self._obstacle_ahead    = False
-        self._obstacle_critical = False
-        self._closest_obs       = float('inf')
-        left_threat  = 0.0
-        right_threat = 0.0
+        self._closest_obs = float('inf')
+        self._critical    = False
+        repulsion         = 0.0
 
         for i, r in enumerate(msg.ranges):
             if not (msg.range_min < r < msg.range_max):
@@ -107,24 +113,34 @@ class PersonFollower(Node):
 
             if r < self._closest_obs:
                 self._closest_obs = r
-            threat = (self.obs_dist - r) / self.obs_dist
-            if angle > 0:
-                left_threat  += threat
-            else:
-                right_threat += threat
-            self._obstacle_ahead = True
             if r < self.obs_stop:
-                self._obstacle_critical = True
+                self._critical = True
 
-        if self._obstacle_ahead:
-            self._obstacle_steer = -1.0 if left_threat >= right_threat else 1.0
+            # potential field: obstacle at angle pushes robot in opposite direction
+            # weight = proximity squared (stronger when very close)
+            weight = ((self.obs_dist - r) / self.obs_dist) ** 2
+            # forward-facing obstacles matter more than side ones
+            forward_factor = math.cos(angle) * 0.5 + 0.5
+            repulsion += -math.sin(angle) * weight * forward_factor
+
+        # scale and store
+        self._avoid_ang = max(-self.max_ang, min(self.max_ang, 2.5 * repulsion))
 
     def control_loop(self):
         if self._person_x is None:
             return
 
-        dx = self._person_x - self._robot_x
-        dy = self._person_y - self._robot_y
+        # compute rear-left target position based on person heading
+        py = self._person_yaw
+        target_x = self._person_x \
+            - self.rear_offset * math.cos(py) \
+            - self.left_offset * math.sin(py)
+        target_y = self._person_y \
+            - self.rear_offset * math.sin(py) \
+            + self.left_offset * math.cos(py)
+
+        dx = target_x - self._robot_x
+        dy = target_y - self._robot_y
         dist = math.sqrt(dx * dx + dy * dy)
         angle_robot = math.atan2(
             math.sin(math.atan2(dy, dx) - self._robot_yaw),
@@ -132,22 +148,28 @@ class PersonFollower(Node):
 
         twist = Twist()
 
-        if self._obstacle_critical:
+        if self._critical:
+            # dangerously close — back up
             twist.linear.x  = -0.2
-            twist.angular.z = self.max_ang * self._obstacle_steer
+            twist.angular.z = self._avoid_ang if self._avoid_ang != 0 else self.max_ang
             self.get_logger().warn('Too close — backing up', throttle_duration_sec=1.0)
-
-        elif self._obstacle_ahead:
-            twist.linear.x  = 0.0
-            twist.angular.z = self.max_ang * self._obstacle_steer
-            self.get_logger().warn('Obstacle — steering', throttle_duration_sec=1.0)
-
         else:
-            twist.angular.z = 0.0 if abs(angle_robot) < math.radians(4) else \
-                max(-self.max_ang, min(self.max_ang, 1.0 * angle_robot))
+            # person-following steering
+            person_ang = 0.0 if abs(angle_robot) < math.radians(2) else \
+                max(-self.max_ang, min(self.max_ang, 2.0 * angle_robot))
+
+            # blend: avoid_ang takes over as obstacle gets closer
+            proximity = max(0.0, 1.0 - (self._closest_obs / self.obs_dist))
+            twist.angular.z = (1.0 - proximity) * person_ang + proximity * self._avoid_ang
+
+            # slow down only when closer than speed_slow_dist (steering reacts earlier at obs_dist)
+            speed_scale = min(1.0, (self._closest_obs - self.obs_stop) /
+                              (self.speed_slow - self.obs_stop)) if self._closest_obs < self.speed_slow else 1.0
             dist_error = dist - self.target_dist
             if dist_error > 0.05:
-                twist.linear.x = min(self.max_lin, 0.5 * dist_error * self.max_lin)
+                twist.linear.x = min(self.max_lin * speed_scale, max(0.15, dist_error * self.max_lin))
+            elif dist_error < -0.05:
+                twist.linear.x = max(-0.2, dist_error * self.max_lin)
 
         self.cmd_pub.publish(twist)
 
@@ -156,7 +178,7 @@ class PersonFollower(Node):
             math.sin(angle_robot - self._swivel_angle),
             math.cos(angle_robot - self._swivel_angle))
         swivel_msg = Float64MultiArray()
-        swivel_msg.data = [max(-2.0, min(2.0, 3.0 * swivel_error))]
+        swivel_msg.data = [max(-4.0, min(4.0, 5.0 * swivel_error))]
         self.swivel_pub.publish(swivel_msg)
 
 

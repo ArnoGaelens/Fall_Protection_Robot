@@ -41,7 +41,7 @@ ros2_ws3/src/
       nav2_params.yaml               # Nav2 configuration
       nav2_rviz.rviz                 # RViz2 config
     scripts/
-      person_sim.py                  # simulated person walking in circle
+      person_sim.py                  # simulated person — click waypoints to draw path
       person_follower.py             # reactive follower publishing /cmd_vel
     worlds/
       Test_Figuren.sdf               # test world (box, cone, cylinder, person model)
@@ -136,15 +136,16 @@ ros2 topic echo /scan
 ### Person Following (reactive controller)
 - Architecture: `person_sim.py` → `/person_pose` → `person_follower.py` → `/cmd_vel`
 - **No Nav2 path planning** — direct reactive velocity control
-- Target distance: 0.3m behind person
-- Max speed: 0.8 m/s (matches elderly walking pace)
-- Obstacle avoidance: stops and steers away if obstacle within 0.6m (excluding person direction)
-- Hard backup: reverses at -0.2 m/s if obstacle within 0.35m
+- Target position: rear-left of person (`rear_offset=0.6m`, `left_offset=0.35m`), `target_distance=0.1m` from that point
+- Max speed: 1.2 m/s
+- Obstacle avoidance: steering repulsion starts at 1.5m (`obstacle_distance`); speed reduction starts at 0.7m (`speed_slow_dist`) — these are intentionally separate parameters
+- Hard backup: reverses at -0.2 m/s if obstacle within 0.4m (`obstacle_stop`)
 - Person ignore cone: 50° around person direction (only ignored if range > 70% of person distance)
-- Upper_Swivel tracks person at all times via P controller on joint angle
-- Person sim: click waypoints in RViz (Publish Point tool) to draw path, person walks it looping
+- Upper_Swivel tracks person at all times via P controller (gain 5.0, cap ±4 rad/s)
+- Person sim: click waypoints in RViz (Publish Point tool) to draw path; close path by clicking near first point; person walks it looping
 - Person sim: natural variation — random pauses (1.5–4s), speed fluctuation (50–120% nominal)
-- Person sim: Gazebo cylinder updated at ~3 Hz, old subprocess killed before new one spawns
+- Person sim: Gazebo cylinder synced via background thread using blocking `gz service /world/empty/set_pose`; auto-resyncs every 2s; manual resync: `ros2 topic pub --once /resync_person std_msgs/msg/Empty {}`
+- Person cylinder: radius 0.2m, height 1.95m, z-center 0.975m (both in Gazebo SDF and RViz marker)
 
 ### RViz2
 - Fixed Frame: `odom`
@@ -155,7 +156,7 @@ ros2 topic echo /scan
 
 ### Physics Tweaks (cheats)
 - `Upper_Swivel` CoM z lowered from +0.077 to -0.35 — prevents robot tipping on acceleration
-- DiffDrive max speed set to 1.5 m/s in plugin (follower uses 0.8 m/s)
+- DiffDrive max speed set to 1.5 m/s in plugin (follower uses 1.2 m/s)
 
 ### Known Issues / Warnings
 - Robot visually underground in RViz — cosmetic only, navigation unaffected
